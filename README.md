@@ -115,6 +115,98 @@ send_video(123, video_path="/tmp/clip.mp4", caption="Короткое видео
 
 ---
 
+### edit_message_text(chat_id: Optional[int]=None, message_id: Optional[int]=None, inline_message_id: Optional[str]=None, text: str="", reply_markup: Optional[dict]=None, parse_mode: Optional[str]=None) -> dict
+
+Что делает: редактирует текст существующего сообщения (editMessageText).
+
+Параметры:
+
+chat_id — ID чата (нужно, если не используется inline_message_id)
+
+message_id — ID сообщения в чате
+
+
+### inline_message_id — ID inline-сообщения (альтернатива chat_id+message_id)
+
+text — новый текст сообщения
+
+reply_markup — новая inline-клавиатура
+
+parse_mode — HTML, MarkdownV2 и т.д.
+
+Поведение:
+
+Должен быть указан либо inline_message_id, либо пара chat_id + message_id.
+
+Позволяет одновременно изменить текст и клавиатуру.
+
+Пример:
+
+edit_message_text(chat_id=123, message_id=42, text="Обновлённый текст", parse_mode="HTML")
+
+
+### edit_message_caption(chat_id: Optional[int]=None, message_id: Optional[int]=None, inline_message_id: Optional[str]=None, caption: Optional[str]=None, reply_markup: Optional[dict]=None) -> dict
+
+Что делает: изменяет подпись (caption) у фото, видео или другого медиа (editMessageCaption).
+
+Параметры:
+
+chat_id, message_id или inline_message_id — идентификатор сообщения
+
+caption — новая подпись
+
+reply_markup — новая inline-клавиатура
+
+Поведение:
+
+Работает только с сообщениями, содержащими медиа.
+
+caption="" позволяет очистить подпись.
+
+Пример:
+
+edit_message_caption(chat_id=123, message_id=100, caption="Новая подпись")
+
+
+### edit_message_reply_markup(chat_id: Optional[int]=None, message_id: Optional[int]=None, inline_message_id: Optional[str]=None, reply_markup: Optional[dict]=None) -> dict
+
+Что делает: обновляет или удаляет inline-клавиатуру сообщения (editMessageReplyMarkup).
+
+Параметры:
+
+chat_id, message_id или inline_message_id
+
+reply_markup — новая клавиатура или None
+
+Поведение:
+
+reply_markup=None — клавиатура будет удалена (inline_keyboard: []).
+
+Можно использовать для частичного обновления кнопок.
+
+Пример:
+
+edit_message_reply_markup(chat_id=123, message_id=42, reply_markup=None)
+
+
+### delete_message(chat_id: int, message_id: int) -> dict
+
+Что делает: удаляет сообщение (deleteMessage).
+
+Параметры:
+
+chat_id — ID чата
+
+message_id — ID сообщения
+
+Поведение:
+
+Бот может удалять сообщения только там, где у него есть соответствующие права.
+
+Пример:
+
+delete_message(chat_id=123, message_id=42)
+
 ### `get_file_path(file_id: str) -> str`
 
 * Что делает: вызывает `getFile` у Telegram и возвращает `file_path` (строку).
