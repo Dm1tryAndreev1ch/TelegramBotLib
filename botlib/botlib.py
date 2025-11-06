@@ -192,6 +192,101 @@ def send_video(chat_id: int, video_path: Optional[str] = None, video_bytes: Opti
         raise ValueError("Either video_path or video_bytes must be provided")
 
 
+# ---------------------------
+# Editing / Deleting messages
+# ---------------------------
+
+def _prepare_message_identifiers(chat_id: Optional[int], message_id: Optional[int], inline_message_id: Optional[str]) -> dict:
+    """
+    Возвращает словарь с идентификаторами для методов editMessage*.
+    Telegram требует либо (chat_id + message_id) либо inline_message_id.
+    """
+    payload = {}
+    if inline_message_id:
+        payload["inline_message_id"] = inline_message_id
+    else:
+        if chat_id is None or message_id is None:
+            raise ValueError("Either inline_message_id OR (chat_id and message_id) must be provided")
+        payload["chat_id"] = chat_id
+        payload["message_id"] = message_id
+    return payload
+
+
+def edit_message_text(chat_id: Optional[int] = None, message_id: Optional[int] = None,
+                      inline_message_id: Optional[str] = None, text: str = "",
+                      reply_markup: Optional[dict] = None, parse_mode: Optional[str] = None) -> dict:
+    """
+    Редактирует текст сообщения.
+    Нужно передать либо (chat_id и message_id) для обычного сообщения, либо inline_message_id для inline-сообщения.
+
+    Параметры:
+      - chat_id: int (опционально)
+      - message_id: int (опционально)
+      - inline_message_id: str (опционально)
+      - text: str — новый текст
+      - reply_markup: dict — новая клавиатура или None
+      - parse_mode: str — 'HTML' или 'MarkdownV2' и т.д.
+
+    Возвращает: dict — JSON-ответ Telegram.
+    """
+    payload = _prepare_message_identifiers(chat_id, message_id, inline_message_id)
+    payload["text"] = text
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
+    if reply_markup is not None:
+        payload["reply_markup"] = json.dumps(reply_markup, ensure_ascii=False)
+    logger.info("edit_message_text chat=%s msg=%s inline=%s text=%s", chat_id, message_id, inline_message_id, text[:50])
+    return _api_post("editMessageText", data=payload)
+
+
+def edit_message_caption(chat_id: Optional[int] = None, message_id: Optional[int] = None,
+                         inline_message_id: Optional[str] = None, caption: Optional[str] = None,
+                         reply_markup: Optional[dict] = None) -> dict:
+    """
+    Редактирует подпись (caption) у медиа-сообщения.
+    Параметры аналогичны edit_message_text.
+    """
+    payload = _prepare_message_identifiers(chat_id, message_id, inline_message_id)
+    if caption is not None:
+        payload["caption"] = caption
+    if reply_markup is not None:
+        payload["reply_markup"] = json.dumps(reply_markup, ensure_ascii=False)
+    logger.info("edit_message_caption chat=%s msg=%s inline=%s caption=%s", chat_id, message_id, inline_message_id, (caption or "")[:50])
+    return _api_post("editMessageCaption", data=payload)
+
+
+def edit_message_reply_markup(chat_id: Optional[int] = None, message_id: Optional[int] = None,
+                              inline_message_id: Optional[str] = None, reply_markup: Optional[dict] = None) -> dict:
+    """
+    Обновляет/удаляет reply_markup (inline-клавиатуру).
+    Для удаления передайте reply_markup=None (в API это просто не передаётся — чтобы удалить, можно передать пустой JSON).
+    Чтобы удалить клавиатуру, передайте {"inline_keyboard": []} либо не указывайте reply_markup (вместо удаления через API можно использовать editMessageReplyMarkup с empty markup).
+    """
+    payload = _prepare_message_identifiers(chat_id, message_id, inline_message_id)
+    # If user explicitly provided None, we will send empty keyboard to clear it.
+    if reply_markup is None:
+        # clear markup
+        payload["reply_markup"] = json.dumps({"inline_keyboard": []}, ensure_ascii=False)
+    else:
+        payload["reply_markup"] = json.dumps(reply_markup, ensure_ascii=False)
+    logger.info("edit_message_reply_markup chat=%s msg=%s inline=%s", chat_id, message_id, inline_message_id)
+    return _api_post("editMessageReplyMarkup", data=payload)
+
+
+def delete_message(chat_id: int, message_id: int) -> dict:
+    """
+    Удалить сообщение (deleteMessage).
+    Требует chat_id и message_id.
+    Возвращает dict с ответом API (обычно {"ok": True, "result": True}).
+    """
+    if chat_id is None or message_id is None:
+        raise ValueError("chat_id and message_id are required to delete a message")
+    payload = {"chat_id": chat_id, "message_id": message_id}
+    logger.info("delete_message chat=%s message=%s", chat_id, message_id)
+    return _api_post("deleteMessage", data=payload)
+
+
+
 def get_file_path(file_id: str) -> str:
     """
     Получить file_path по file_id через метод getFile.
